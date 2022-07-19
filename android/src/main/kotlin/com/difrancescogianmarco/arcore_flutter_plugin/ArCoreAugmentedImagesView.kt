@@ -24,6 +24,10 @@ import io.flutter.plugin.common.MethodChannel
 import java.io.ByteArrayInputStream
 import java.io.IOException
 import java.util.*
+import com.google.ar.core.exceptions.*
+import com.google.ar.core.*
+import kotlinx.coroutines.*
+import kotlin.coroutines.CoroutineContext
 
 class ArCoreAugmentedImagesView(
     activity: Activity,
@@ -32,7 +36,7 @@ class ArCoreAugmentedImagesView(
     id: Int,
     val useSingleImage: Boolean,
     debug: Boolean
-) : BaseArCoreView(activity, context, messenger, id, debug) {
+) : BaseArCoreView(activity, context, messenger, id, debug), CoroutineScope {
 
     private val TAG: String = ArCoreAugmentedImagesView::class.java.name
     private var sceneUpdateListener: Scene.OnUpdateListener
@@ -44,6 +48,10 @@ class ArCoreAugmentedImagesView(
     private var augmentedImageDatabase: AugmentedImageDatabase? = null
     private val gestureDetector: GestureDetector
     private val sync = Integer.MAX_VALUE
+
+    private var job: Job = Job()
+    override val coroutineContext: CoroutineContext
+        get() = Dispatchers.Main + job
 
     init {
 
@@ -250,7 +258,6 @@ class ArCoreAugmentedImagesView(
                                     throwable.localizedMessage,
                                     null
                                 )
-
                             }
                         }
                     } else {
@@ -292,6 +299,7 @@ class ArCoreAugmentedImagesView(
                 }
                 "dispose" -> {
                     debugLog(" dispose")
+                    job.cancel()
                     dispose()
                     result.success(null)
                 }
@@ -342,6 +350,7 @@ class ArCoreAugmentedImagesView(
             }
         } else {
             debugLog("Impossible call " + call.method + " method on unsupported device")
+            job.cancel()
             result.error("Unsupported Device", "", null)
         }
     }
@@ -537,33 +546,35 @@ class ArCoreAugmentedImagesView(
     private fun addMultipleImagesToAugmentedImageDatabase(
         config: Config,
         bytesMap: Map<String, ByteArray>
-    ): Boolean {
+    , session: Session) {
         debugLog("addImageToAugmentedImageDatabase")
         val augmentedImageDatabase = AugmentedImageDatabase(arSceneView?.session)
-        for ((key, value) in bytesMap) {
-            val augmentedImageBitmap = loadAugmentedImageBitmap(value)
-            try {
-                augmentedImageDatabase.addImage(key, augmentedImageBitmap)
-            } catch (ex: Exception) {
-                debugLog(
+
+        launch {
+            val operation = async(Dispatchers.Default) {
+                for ((key, value) in bytesMap) {
+                    val augmentedImageBitmap = loadAugmentedImageBitmap(value)
+                    try {
+                        augmentedImageDatabase.addImage(key, augmentedImageBitmap)
+                    } catch (ex: Exception) {
+                        debugLog(
                     "Image with the title $key cannot be added to the database. " +
                             "The exception was thrown: " + ex?.toString()
                 )
+                    }
+                }
+                if (augmentedImageDatabase?.getNumImages() == 0) {
+                    throw Exception("Could not setup augmented image database")
+                }
+                config.augmentedImageDatabase = augmentedImageDatabase
+                session.configure(config)
+                arSceneView?.setupSession(session)
             }
+            operation.await()
         }
-        config.augmentedImageDatabase = augmentedImageDatabase
-        return augmentedImageDatabase?.getNumImages() != 0 ?: return false
     }
 
     private fun addImageToAugmentedImageDatabase(config: Config, bytes: ByteArray): Boolean {
-
-        // There are two ways to configure an AugmentedImageDatabase:
-        // 1. Add Bitmap to DB directly
-        // 2. Load a pre-built AugmentedImageDatabase
-        // Option 2) has
-        // * shorter setup time
-        // * doesn't require images to be packaged in apk.
-//        if (useSingleImage && singleImageBytes != null) {
         debugLog("addImageToAugmentedImageDatabase")
         try {
             val augmentedImageBitmap = loadAugmentedImageBitmap(bytes) ?: return false
