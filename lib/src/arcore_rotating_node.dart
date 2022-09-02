@@ -11,7 +11,7 @@ class ArCoreRotatingNode extends ArCoreNode {
     Vector3? scale,
     Vector4? rotation,
     String? name,
-  })  : degreesPerSecond = ValueNotifier(degreesPerSecond),
+  })  : degreesPerSecond = ValueNotifier(degreesPerSecond ?? 90),
         super(
           shape: shape,
           name: name,

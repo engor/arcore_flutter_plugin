@@ -528,9 +528,7 @@ class ArCoreAugmentedImagesView(
                 config.focusMode = Config.FocusMode.AUTO
                 config.updateMode = Config.UpdateMode.LATEST_CAMERA_IMAGE
                 bytesMap?.let {
-                    if (!addMultipleImagesToAugmentedImageDatabase(config, bytesMap)) {
-                        throw Exception("Could not setup augmented image database")
-                    }
+                    addMultipleImagesToAugmentedImageDatabase(config, bytesMap, session)
                 }
                 activity.runOnUiThread {
                     session.configure(config)
@@ -545,8 +543,8 @@ class ArCoreAugmentedImagesView(
 
     private fun addMultipleImagesToAugmentedImageDatabase(
         config: Config,
-        bytesMap: Map<String, ByteArray>
-    , session: Session) {
+        bytesMap: Map<String, ByteArray>, session: Session
+    ) {
         debugLog("addImageToAugmentedImageDatabase")
         val augmentedImageDatabase = AugmentedImageDatabase(arSceneView?.session)
 
@@ -558,17 +556,17 @@ class ArCoreAugmentedImagesView(
                         augmentedImageDatabase.addImage(key, augmentedImageBitmap)
                     } catch (ex: Exception) {
                         debugLog(
-                    "Image with the title $key cannot be added to the database. " +
-                            "The exception was thrown: " + ex?.toString()
-                )
+                            "Image with the title $key cannot be added to the database. " +
+                                    "The exception was thrown: " + ex?.toString()
+                        )
                     }
                 }
-                if (augmentedImageDatabase?.getNumImages() == 0) {
+                if (augmentedImageDatabase.numImages == 0) {
                     throw Exception("Could not setup augmented image database")
                 }
                 config.augmentedImageDatabase = augmentedImageDatabase
                 session.configure(config)
-                arSceneView?.setupSession(session)
+                arSceneView?.setSession(session)
             }
             operation.await()
         }

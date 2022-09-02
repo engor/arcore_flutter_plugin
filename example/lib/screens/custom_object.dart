@@ -45,7 +45,7 @@ class _CustomObjectState extends State<CustomObject> {
     final moon = ArCoreNode(
       shape: moonShape,
       position: vector.Vector3(0.2, 0, 0),
-      rotation: vector.Vector4(0, 0, 0, 0),
+      // rotation: vector.Vector4(0, 0, 0, 0),
     );
 
     final ByteData textureBytes = await rootBundle.load('assets/earth.jpg');
@@ -63,7 +63,8 @@ class _CustomObjectState extends State<CustomObject> {
         shape: earthShape,
         children: [moon],
         position: hit.pose.translation + vector.Vector3(0.0, 1.0, 0.0),
-        rotation: hit.pose.rotation);
+        // rotation: hit.pose.rotation
+    );
 
     arCoreController?.addArCoreNodeWithAnchor(earth);
   }

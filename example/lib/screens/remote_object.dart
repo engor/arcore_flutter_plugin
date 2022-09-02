@@ -38,7 +38,8 @@ class _RemoteObjectState extends State<RemoteObject> {
         objectUrl:
             "https://github.com/KhronosGroup/glTF-Sample-Models/raw/master/2.0/Duck/glTF/Duck.gltf",
         position: plane.pose.translation,
-        rotation: plane.pose.rotation);
+        // rotation: plane.pose.rotation
+    );
 
     arCoreController?.addArCoreNodeWithAnchor(toucanNode);
   }

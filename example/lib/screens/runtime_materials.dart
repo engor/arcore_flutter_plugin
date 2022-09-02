@@ -175,7 +175,7 @@ class _SphereControlState extends State<SphereControl> {
         children: <Widget>[
           Row(
             children: <Widget>[
-              RaisedButton(
+              ElevatedButton(
                 child: Text("Random Color"),
                 onPressed: () {
                   final newColor = Colors.accents[Random().nextInt(14)];

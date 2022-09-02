@@ -45,7 +45,7 @@ class ArCoreController {
   final bool? enableUpdateListener;
   final bool? enableTapRecognizer;
   final bool? enablePlaneRenderer;
-  final bool? debug;
+  final bool debug;
   late MethodChannel _channel;
   StringResultHandler? onError;
   StringResultHandler? onNodeTap;
@@ -56,7 +56,7 @@ class ArCoreController {
   String trackingState = '';
   ArCoreAugmentedImageTrackingHandler? onTrackingImage;
 
-  Function(String nodeName, String state, double percent) onAnimChanged;
+  Function(String nodeName, String state, double percent)? onAnimChanged;
 
   init() async {
     try {
@@ -71,7 +71,7 @@ class ArCoreController {
   }
 
   Future<dynamic> _handleMethodCalls(MethodCall call) async {
-    if (debug ?? true) {
+    if (debug) {
       print('_platformCallHandler call ${call.method} ${call.arguments}');
     }
 
@@ -106,12 +106,12 @@ class ArCoreController {
       case 'getTrackingState':
       // TRACKING, PAUSED or STOPPED
         trackingState = call.arguments;
-        if (debug ?? true) {
+        if (debug) {
           print('Latest tracking state received is: $trackingState');
         }
         break;
       case 'onTrackingImage':
-        if (debug ?? true) {
+        if (debug) {
           print('flutter onTrackingImage');
         }
         final arCoreAugmentedImage =
@@ -119,7 +119,7 @@ class ArCoreController {
         onTrackingImage!(arCoreAugmentedImage);
         break;
       case 'togglePlaneRenderer':
-        if (debug ?? true) {
+        if (debug) {
           print('Toggling Plane Renderer Visibility');
         }
         togglePlaneRenderer();
@@ -133,12 +133,12 @@ class ArCoreController {
           final String state = call.arguments['state'];
           final double percent = call.arguments['percent'];
 
-          onAnimChanged(nodeName, state, percent);
+          onAnimChanged?.call(nodeName, state, percent);
         }
         break;
 
       default:
-        if (debug ?? true) {
+        if (debug) {
           print('Unknown method ${call.method}');
         }
     }
@@ -147,7 +147,7 @@ class ArCoreController {
 
   Future<void> addArCoreNode(ArCoreNode node, {String? parentNodeName}) {
     final params = _addParentNodeNameToParams(node.toMap(), parentNodeName);
-    if (debug ?? true) {
+    if (debug) {
       print(params.toString());
     }
     _addListeners(node);
@@ -180,11 +180,11 @@ class ArCoreController {
   Future<void> addArCoreNodeWithAnchor(ArCoreNode node,
       {String? parentNodeName}) {
     final params = _addParentNodeNameToParams(node.toMap(), parentNodeName);
-    if (debug ?? true) {
+    if (debug) {
       print(params.toString());
     }
     _addListeners(node);
-    if (debug ?? true) {
+    if (debug) {
       print('---------_CALLING addArCoreNodeWithAnchor : $params');
     }
     return _channel.invokeMethod('addArCoreNodeWithAnchor', params);
@@ -204,8 +204,8 @@ class ArCoreController {
 
   void _addListeners(ArCoreNode node) {
     node.position?.addListener(() => _handlePositionChanged(node));
-    node.rotation.addListener(() => _handleRotationChanged(node));
-    node.scale.addListener(() => _handleScaleChanged(node));
+    node.rotation?.addListener(() => _handleRotationChanged(node));
+    node.scale?.addListener(() => _handleScaleChanged(node));
     node.shape?.materials.addListener(() => _updateMaterials(node));
     if (node is ArCoreRotatingNode) {
       node.degreesPerSecond.addListener(() => _handleAutoRotationChanged(node));
@@ -221,13 +221,13 @@ class ArCoreController {
   void _handleRotationChanged(ArCoreNode node) {
     _channel.invokeMethod<void>('rotationChanged',
         _getHandlerParams(
-            node, {'rotation': convertVector3ToMap(node.rotation.value)}));
+            node, {'rotation': convertVector3ToMap(node.rotation?.value)}));
   }
 
   void _handleScaleChanged(ArCoreNode node) {
     _channel.invokeMethod<void>('scaleChanged',
         _getHandlerParams(
-            node, {'scale': convertVector3ToMap(node.scale.value)}));
+            node, {'scale': convertVector3ToMap(node.scale?.value)}));
   }
 
   void _handleAutoRotationChanged(ArCoreRotatingNode node) {
@@ -273,7 +273,7 @@ class ArCoreController {
   }
 
   Future<void> cleanup() {
-    return _channel?.invokeMethod<void>('cleanup');
+    return _channel.invokeMethod<void>('cleanup');
   }
 
   Future<void> runGC() {
@@ -291,8 +291,8 @@ class ArCoreController {
   }
 
   Future<void> animate(
-      {String nodeName, List<double> interval, double progress}) async {
-    return _channel?.invokeMethod<void>(
+      {required String nodeName, List<double>? interval, double? progress}) async {
+    return _channel.invokeMethod<void>(
         'animate', {
       'nodeName': nodeName, 'interval': interval, 'progress': progress,
     });

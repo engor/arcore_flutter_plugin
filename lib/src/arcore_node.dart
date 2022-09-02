@@ -17,7 +17,7 @@ class ArCoreNode {
     String? name,
     Vector3? position,
     Vector3? scale,
-    Vector4? rotation,
+    Vector3? rotation,
     this.children = const [],
   })
       : name = name ?? random_string.randomString(),

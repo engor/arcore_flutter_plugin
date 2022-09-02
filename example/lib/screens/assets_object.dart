@@ -51,7 +51,8 @@ class _AssetsObjectState extends State<AssetsObject> {
           name: objectSelected,
           object3DFileName: objectSelected,
           position: plane.pose.translation,
-          rotation: plane.pose.rotation);
+          // rotation: plane.pose.rotation
+      );
 
       arCoreController?.addArCoreNodeWithAnchor(toucanoNode);
     } else {

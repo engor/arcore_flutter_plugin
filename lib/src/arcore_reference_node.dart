@@ -12,7 +12,7 @@ class ArCoreReferenceNode extends ArCoreNode {
 
   final bool animationAutoPlay;
 
-  final double animationProgressPercent;
+  final double? animationProgressPercent;
 
   ArCoreReferenceNode({
     String? name,

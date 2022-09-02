@@ -51,7 +51,8 @@ class _AutoDetectPlaneState extends State<AutoDetectPlane> {
     node = ArCoreNode(
         shape: sphere,
         position: plane.centerPose?.translation,
-        rotation: plane.centerPose?.rotation);
+        // rotation: plane.centerPose?.rotation
+    );
     arCoreController?.addArCoreNodeWithAnchor(node!);
   }
 
