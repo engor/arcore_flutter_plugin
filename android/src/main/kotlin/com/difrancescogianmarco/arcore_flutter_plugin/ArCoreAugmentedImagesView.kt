@@ -37,7 +37,7 @@ class ArCoreAugmentedImagesView(
 ) : BaseArCoreView(activity, context, messenger, id, debug), CoroutineScope {
 
     private val TAG: String = ArCoreAugmentedImagesView::class.java.name
-    private var sceneUpdateListener: Scene.OnUpdateListener
+    private var sceneUpdateListener: Scene.OnUpdateListener?
 
     // Augmented image and its associated center pose anchor,
     // keyed by index of the augmented image in the database.
@@ -109,7 +109,7 @@ class ArCoreAugmentedImagesView(
                     map["extentX"] = plane.extentX
                     map["extentZ"] = plane.extentZ
 
-                    methodChannel.invokeMethod("onPlaneDetected", map)
+                    methodChannel!!.invokeMethod("onPlaneDetected", map)
                 }
             }
         }
@@ -170,7 +170,7 @@ class ArCoreAugmentedImagesView(
                     list.add(arguments)
                 }
             }
-            methodChannel.invokeMethod("onPlaneTap", list)
+            methodChannel!!.invokeMethod("onPlaneTap", list)
         }
     }
 
@@ -182,8 +182,8 @@ class ArCoreAugmentedImagesView(
         map["extentZ"] = augmentedImage.extentZ
         map["centerPose"] = FlutterArCorePose.fromPose(augmentedImage.centerPose).toHashMap()
         map["trackingMethod"] = augmentedImage.trackingMethod.ordinal
-        activity.runOnUiThread {
-            methodChannel.invokeMethod("onTrackingImage", map)
+        activity!!.runOnUiThread {
+            methodChannel!!.invokeMethod("onTrackingImage", map)
         }
     }
 
@@ -256,7 +256,7 @@ class ArCoreAugmentedImagesView(
                     if (augmentedImageMap.containsKey(index)) {
                         val anchorNode = augmentedImageMap[index]!!.second
                         NodeFactory.makeNode(
-                            activity.applicationContext,
+                            activity!!.applicationContext,
                             flutterArCoreNode,
                             debug
                         ) { node, throwable ->
@@ -413,6 +413,7 @@ class ArCoreAugmentedImagesView(
 //    }
 
     override fun cleanup() {
+        Log.d(TAG, "cleanup start, free-mem: ${Runtime.getRuntime().freeMemory()/1024.0/1024} mb, used-mem: ${Runtime.getRuntime().totalMemory()/1024.0/1024} mb, max-mem: ${Runtime.getRuntime().maxMemory()/1024.0/1024} mb")
         arSceneView?.scene?.removeOnUpdateListener(sceneUpdateListener)
         removeAllAugmentedImages()
         super.cleanup()
@@ -428,7 +429,7 @@ class ArCoreAugmentedImagesView(
                         debugLog(" onNodeTap " + hitTestResult.node?.name)
                         debugLog(hitTestResult.node?.localPosition.toString())
                         debugLog(hitTestResult.node?.worldPosition.toString())
-                        methodChannel.invokeMethod("onNodeTap", hitTestResult.node?.name)
+                        methodChannel!!.invokeMethod("onNodeTap", hitTestResult.node?.name)
                         return@setOnTouchListener true
                     }
                 }
@@ -450,8 +451,8 @@ class ArCoreAugmentedImagesView(
 
         if (arSceneView?.session == null) {
             debugLog("session NULL")
-            if (!ArCoreUtils.hasCameraPermission(activity)) {
-                ArCoreUtils.requestCameraPermission(activity, RC_PERMISSIONS)
+            if (!ArCoreUtils.hasCameraPermission(activity!!)) {
+                ArCoreUtils.requestCameraPermission(activity!!, RC_PERMISSIONS)
                 return
             }
 
@@ -459,7 +460,7 @@ class ArCoreAugmentedImagesView(
             // If the session wasn't created yet, don't resume rendering.
             // This can happen if ARCore needs to be updated or permissions are not granted yet.
             try {
-                val session = ArCoreUtils.createArSession(activity, installRequested, false)
+                val session = ArCoreUtils.createArSession(activity!!, installRequested, false)
                 if (session == null) {
                     installRequested = false
                     return
@@ -470,7 +471,7 @@ class ArCoreAugmentedImagesView(
                     applySessionConfig(session)
                 }
             } catch (e: UnavailableException) {
-                ArCoreUtils.handleSessionException(activity, e)
+                ArCoreUtils.handleSessionException(activity!!, e)
             }
         }
 
@@ -481,9 +482,9 @@ class ArCoreAugmentedImagesView(
             }
             debugLog("arSceneView.resume()")
         } catch (ex: CameraNotAvailableException) {
-            ArCoreUtils.displayError(activity, "Unable to get camera", ex)
+            ArCoreUtils.displayError(activity!!, "Unable to get camera", ex)
             debugLog("CameraNotAvailableException")
-            activity.finish()
+            activity!!.finish()
             return
         } catch (ex: java.lang.Exception) {
             ex.printStackTrace()
@@ -669,11 +670,5 @@ class ArCoreAugmentedImagesView(
             }
         }
         result.success(null)
-    }
-
-    override fun onDestroy() {
-        debugLog("onDestroy")
-        cleanup()
-        super.onDestroy()
     }
 }

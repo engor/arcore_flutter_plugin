@@ -20,17 +20,18 @@ import io.flutter.plugin.common.BinaryMessenger
 import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
 import io.flutter.plugin.platform.PlatformView
+import java.util.concurrent.CompletableFuture
 
 open class BaseArCoreView(
-    val activity: Activity,
-    context: Context,
+    var activity: Activity?,
+    context: Context?,
     messenger: BinaryMessenger,
     id: Int,
     protected val debug: Boolean
 ) : PlatformView, MethodChannel.MethodCallHandler {
 
-    lateinit var activityLifecycleCallbacks: Application.ActivityLifecycleCallbacks
-    protected val methodChannel: MethodChannel =
+    var activityLifecycleCallbacks: Application.ActivityLifecycleCallbacks? = null
+    protected var methodChannel: MethodChannel? =
         MethodChannel(messenger, "arcore_flutter_plugin_$id")
     protected var arSceneView: ArSceneView? = null
     protected val RC_PERMISSIONS = 0x123
@@ -41,14 +42,14 @@ open class BaseArCoreView(
 
     init {
         debugLog("base init")
-        methodChannel.setMethodCallHandler(this)
-        if (ArCoreUtils.checkIsSupportedDeviceOrFinish(activity)) {
+        methodChannel!!.setMethodCallHandler(this)
+        if (ArCoreUtils.checkIsSupportedDeviceOrFinish(activity!!)) {
             isSupportedDevice = true
             arSceneView = ArSceneView(context)
             arSceneView?.lightEstimationConfig =
                 LightEstimationConfig(mode = Config.LightEstimationMode.DISABLED)
-            ArCoreUtils.requestCameraPermission(activity, RC_PERMISSIONS)
-            setupLifeCycle(context)
+            ArCoreUtils.requestCameraPermission(activity!!, RC_PERMISSIONS)
+            setupLifeCycle(activity!!)
         }
     }
 
@@ -58,7 +59,7 @@ open class BaseArCoreView(
         }
     }
 
-    private fun setupLifeCycle(context: Context) {
+    private fun setupLifeCycle(activity: Activity) {
         activityLifecycleCallbacks = object : Application.ActivityLifecycleCallbacks {
             override fun onActivityCreated(activity: Activity, savedInstanceState: Bundle?) {
                 debugLog("onActivityCreated")
@@ -122,7 +123,7 @@ open class BaseArCoreView(
     fun onAddNode(flutterArCoreNode: FlutterArCoreNode, result: MethodChannel.Result?) {
         debugLog(flutterArCoreNode.toString())
         NodeFactory.makeNode(
-            activity.applicationContext,
+            activity!!.applicationContext,
             flutterArCoreNode,
             debug
         ) { node, throwable ->
@@ -229,9 +230,23 @@ open class BaseArCoreView(
     }
 
     open fun onDestroy() {
-        if (arSceneView != null) {
+//        arSceneView?.pause()
+//        CompletableFuture.runAsync {
             arSceneView?.destroy()
             arSceneView = null
-        }
+            activity = null
+            activityLifecycleCallbacks = null
+            methodChannel = null
+//            System.gc()
+            Log.d(
+                TAG,
+                "arcore-view destroy, free-mem: ${
+                    Runtime.getRuntime().freeMemory() / 1024.0 / 1024
+                } mb, used-mem: ${
+                    Runtime.getRuntime().totalMemory() / 1024.0 / 1024
+                } mb, max-mem: ${Runtime.getRuntime().maxMemory() / 1024.0 / 1024} mb"
+            )
+//        ArSceneView.destroyAllResources()
+//        }
     }
 }
